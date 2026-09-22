@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crash Game Simulator</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #10131a;
+  color: #fff;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  padding: 18px;
+  text-align: center;
+  background: #171b24;
+  border-bottom: 1px solid #292f3b;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.demo {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 5px 10px;
+  border-radius: 15px;
+  background: #332d12;
+  color: #ffd84d;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.container {
+  max-width: 700px;
+  margin: auto;
+  padding: 15px;
+}
+
+.balance {
+  background: #171b24;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.balance span {
+  display: block;
+  color: #9da5b5;
+  font-size: 13px;
+}
+
+.balance strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 28px;
+}
+
+.game {
+  position: relative;
+  height: 330px;
+  overflow: hidden;
+  border-radius: 15px;
+  background:
+    radial-gradient(circle at center, #202a39 0%, #111722 55%, #0b0e14 100%);
+  border: 1px solid #2b3442;
+}
+
+.multiplier {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  font-size: 58px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.status {
+  position: absolute;
+  left: 50%;
+  top: 63%;
+  transform: translateX(-50%);
+  color: #aab3c2;
+}
+
+.crashed {
+  color: #ff4f5e !important;
+}
+
+.flying {
+  color: #55e6a5;
+}
+
+.controls {
+  margin-top: 15px;
+  background: #171b24;
+  padding: 15px;
+  border-radius: 12px;
+}
+
+label {
+  display: block;
+  margin-bottom: 7px;
+  color: #aab3c2;
+  font-size: 14px;
+}
+
+input {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #343c4a;
+  border-radius: 8px;
+  background: #0f1218;
+  color: white;
+  font-size: 16px;
+  outline: none;
+}
+
+input:focus {
+  border-color: #5d8cff;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+button {
+  flex: 1;
+  padding: 14px;
+  border: 0;
+  border-radius: 9px;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.bet {
+  background: #3478f6;
+}
+
+.cashout {
+  background: #19a974;
+}
+
+button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.info {
+  margin-top: 15px;
+  padding: 13px;
+  border-radius: 10px;
+  background: #11151d;
+  color: #aeb7c6;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.history {
+  margin-top: 15px;
+  background: #171b24;
+  border-radius: 12px;
+  padding: 15px;
+}
+
+.history h3 {
+  margin-top: 0;
+}
+
+.history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.history-item {
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: #242b36;
+  font-size: 13px;
+}
+
+.low {
+  color: #ff6875;
+}
+
+.high {
+  color: #55e6a5;
+}
+
+.footer {
+  text-align: center;
+  color: #737d8d;
+  padding: 25px 10px;
+  font-size: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Crash Game Simulator</h1>
+  <div class="demo">DEMO / PLAY-MONEY ONLY</div>
+</header>
+
+<div class="container">
+
+  <div class="balance">
+    <span>Demo Balance</span>
+    <strong id="balance">10,000.00</strong>
+  </div>
+
+  <div class="game">
+    <div id="multiplier" class="multiplier">1.00x</div>
+    <div id="status" class="status">Place your demo bet</div>
+  </div>
+
+  <div class="controls">
+
+    <label for="betAmount">Demo Bet Amount</label>
+    <input
+      id="betAmount"
+      type="number"
+      min="1"
+      step="1"
+      value="100"
+    >
+
+    <div class="row">
+      <button id="betButton" class="bet">Place Demo Bet</button>
+      <button id="cashoutButton" class="cashout" disabled>
+        Cash Out
+      </button>
+    </div>
+
+    <div class="info">
+      This is a simulation. The balance has no monetary value.
+      No real-money deposits, withdrawals, payments, or gambling
+      transactions are processed.
+    </div>
+
+  </div>
+
+  <div class="history">
+    <h3>Recent Crash Results</h3>
+    <div id="historyList" class="history-list"></div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Crash Game Simulator • Demo only
+</div>
+
+<script>
+const balanceEl = document.getElementById("balance");
+const multiplierEl = document.getElementById("multiplier");
+const statusEl = document.getElementById("status");
+const betInput = document.getElementById("betAmount");
+const betButton = document.getElementById("betButton");
+const cashoutButton = document.getElementById("cashoutButton");
+const historyList = document.getElementById("historyList");
+
+let balance = 10000;
+let multiplier = 1.00;
+let crashPoint = 1.00;
+let running = false;
+let hasBet = false;
+let betAmount = 0;
+let timer = null;
+let startTime = 0;
+
+function updateBalance() {
+  balanceEl.textContent = balance.toFixed(2);
+}
+
+function randomCrashPoint() {
+  // Demo-only random crash point.
+  const r = Math.random();
+
+  if (r < 0.03) return 1.00;
+  if (r < 0.20) return 1.10 + Math.random() * 0.50;
+  if (r < 0.60) return 1.60 + Math.random() * 1.40;
+  if (r < 0.90) return 3.00 + Math.random() * 7.00;
+
+  return 10.00 + Math.random() * 20.00;
+}
+
+function startRound() {
+  if (running) return;
+
+  multiplier = 1.00;
+  crashPoint = randomCrashPoint();
+
+  running = true;
+  hasBet = false;
+  betAmount = 0;
+
+  multiplierEl.textContent = "1.00x";
+  multiplierEl.className = "multiplier flying";
+  statusEl.textContent = "Round running...";
+  statusEl.className = "status";
+
+  betButton.disabled = false;
+  cashoutButton.disabled = true;
+
+  startTime = performance.now();
+
+  timer = requestAnimationFrame(updateRound);
+}
+
+function updateRound(now) {
+  if (!running) return;
+
+  const elapsed = (now - startTime) / 1000;
+
+  // Smooth demo multiplier growth.
+  multiplier = Math.pow(1.12, elapsed * 2);
+
+  if (multiplier >= crashPoint) {
+    multiplier = crashPoint;
+    endRound();
+    return;
+  }
+
+  multiplierEl.textContent = multiplier.toFixed(2) + "x";
+
+  if (hasBet) {
+    cashoutButton.disabled = false;
+    statusEl.textContent =
+      "Potential return: " +
+      (betAmount * multiplier).toFixed(2);
+  }
+
+  timer = requestAnimationFrame(updateRound);
+}
+
+function endRound() {
+  running = false;
+
+  cancelAnimationFrame(timer);
+
+  multiplierEl.textContent = crashPoint.toFixed(2) + "x";
+  multiplierEl.className = "multiplier crashed";
+
+  if (hasBet) {
+    hasBet = false;
+    cashoutButton.disabled = true;
+    statusEl.textContent = "Crashed — demo bet lost";
+  } else {
+    statusEl.textContent = "Crashed at " +
+      crashPoint.toFixed(2) + "x";
+  }
+
+  addHistory(crashPoint);
+
+  betButton.disabled = false;
+
+  setTimeout(startRound, 2500);
+}
+
+function placeBet() {
+  if (!running || hasBet) return;
+
+  const amount = Number(betInput.value);
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    alert("Enter a valid demo bet amount.");
+    return;
+  }
+
+  if (amount > balance) {
+    alert("Insufficient demo balance.");
+    return;
+  }
+
+  balance -= amount;
+  betAmount = amount;
+  hasBet = true;
+
+  updateBalance();
+
+  cashoutButton.disabled = false;
+  statusEl.textContent =
+    "Demo bet placed • " +
+    amount.toFixed(2);
+}
+
+function cashOut() {
+  if (!running || !hasBet) return;
+
+  const winnings = betAmount * multiplier;
+
+  balance += winnings;
+
+  hasBet = false;
+  cashoutButton.disabled = true;
+
+  updateBalance();
+
+  statusEl.textContent =
+    "Cashed out at " +
+    multiplier.toFixed(2) +
+    "x • +" +
+    winnings.toFixed(2);
+
+  betAmount = 0;
+}
+
+function addHistory(value) {
+  const item = document.createElement("div");
+
+  item.className =
+    "history-item " +
+    (value < 2 ? "low" : "high");
+
+  item.textContent = value.toFixed(2) + "x";
+
+  historyList.prepend(item);
+
+  while (historyList.children.length > 12) {
+    historyList.removeChild(historyList.lastChild);
+  }
+}
+
+betButton.addEventListener("click", placeBet);
+cashoutButton.addEventListener("click", cashOut);
+
+updateBalance();
+
+// Initial demo history
+[
+  1.24,
+  2.17,
+  1.08,
+  4.62,
+  1.73,
+  8.14
+].forEach(addHistory);
+
+startRound();
+</script>
+
+</body>
+  </html>
