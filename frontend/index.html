@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Crash Simulator</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #10131a;
+      color: white;
+    }
+
+    header {
+      padding: 18px;
+      background: #171b24;
+      text-align: center;
+    }
+
+    main {
+      max-width: 900px;
+      margin: auto;
+      padding: 18px;
+    }
+
+    .card {
+      background: #191e28;
+      border-radius: 14px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+
+    #multiplier {
+      font-size: 64px;
+      font-weight: bold;
+      text-align: center;
+      padding: 40px 0;
+    }
+
+    #status {
+      text-align: center;
+      color: #aaa;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input,
+    button {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #394150;
+      background: #11151c;
+      color: white;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #272e3b;
+    }
+
+    .admin {
+      border: 1px solid #b98b35;
+    }
+
+    .small {
+      color: #aab2c0;
+    }
+
+    .history {
+      padding-left: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h2>Crash Simulator</h2>
+  <span class="small">Virtual Coins • Educational Demo</span>
+</header>
+
+<main>
+
+  <!-- Game -->
+  <div class="card">
+
+    <div id="multiplier">
+      1.00x
+    </div>
+
+    <div id="status">
+      Ready
+    </div>
+
+  </div>
+
+
+  <!-- Player -->
+  <div class="card">
+
+    <h3>Player</h3>
+
+    <p>
+      Virtual Balance:
+      <strong>
+        <span id="balance">1000</span>
+      </strong>
+      coins
+    </p>
+
+    <div class="row">
+
+      <input
+        id="stake"
+        type="number"
+        value="50"
+        min="1"
+      >
+
+      <button onclick="startRound()">
+        Start Demo Round
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- Admin Test Mode -->
+  <div class="card admin">
+
+    <h3>Admin — TEST MODE</h3>
+
+    <p class="small">
+      This control is only for simulated demo rounds.
+    </p>
+
+    <div class="row">
+
+      <input
+        id="fixedCrash"
+        type="number"
+        step="0.01"
+        min="1.01"
+        placeholder="Example: 2.50"
+      >
+
+      <button onclick="setTestCrash()">
+        Set Next Test Crash
+      </button>
+
+      <button onclick="clearTestCrash()">
+        Clear
+      </button>
+
+    </div>
+
+    <p
+      id="testMessage"
+      class="small">
+    </p>
+
+  </div>
+
+
+  <!-- History -->
+  <div class="card">
+
+    <h3>Round History</h3>
+
+    <ul
+      id="history"
+      class="history">
+    </ul>
+
+  </div>
+
+</main>
+
+
+<script>
+
+let balance = 1000;
+
+let testCrash = null;
+
+let running = false;
+
+
+/*
+  Admin test control
+*/
+
+function setTestCrash() {
+
+  const value =
+    Number(
+      document.getElementById("fixedCrash").value
+    );
+
+  if (value < 1.01 || !value) {
+
+    alert(
+      "Enter a multiplier of at least 1.01"
+    );
+
+    return;
+  }
+
+  testCrash = value;
+
+  document.getElementById(
+    "testMessage"
+  ).textContent =
+    "Next test crash: " +
+    value.toFixed(2) +
+    "x";
+}
+
+
+/*
+  Clear test setting
+*/
+
+function clearTestCrash() {
+
+  testCrash = null;
+
+  document.getElementById(
+    "testMessage"
+  ).textContent =
+    "Test control cleared.";
+}
+
+
+/*
+  Start game
+*/
+
+function startRound() {
+
+  if (running) {
+    return;
+  }
+
+  const stake =
+    Number(
+      document.getElementById("stake").value
+    );
+
+
+  /*
+    Validate virtual stake
+  */
+
+  if (
+    !stake ||
+    stake <= 0 ||
+    stake > balance
+  ) {
+
+    alert(
+      "Enter a valid virtual stake."
+    );
+
+    return;
+  }
+
+
+  /*
+    Remove virtual coins
+  */
+
+  balance -= stake;
+
+  updateBalance();
+
+  running = true;
+
+
+  /*
+    Use admin test value if supplied.
+    Otherwise generate a random
+    demo crash point.
+  */
+
+  const crashPoint =
+    testCrash !== null
+      ? testCrash
+      : 1.01 + Math.random() * 7;
+
+
+  testCrash = null;
+
+  document.getElementById(
+    "testMessage"
+  ).textContent = "";
+
+
+  let multiplier = 1.00;
+
+
+  document.getElementById(
+    "status"
+  ).textContent =
+    "Round running...";
+
+
+  /*
+    Crash animation
+  */
+
+  const timer =
+    setInterval(function () {
+
+      multiplier +=
+        Math.max(
+          0.02,
+          multiplier * 0.015
+        );
+
+
+      document.getElementById(
+        "multiplier"
+      ).textContent =
+        multiplier.toFixed(2) + "x";
+
+
+      /*
+        Crash reached
+      */
+
+      if (
+        multiplier >= crashPoint
+      ) {
+
+        clearInterval(timer);
+
+        running = false;
+
+
+        document.getElementById(
+          "multiplier"
+        ).textContent =
+          crashPoint.toFixed(2) + "x";
+
+
+        document.getElementById(
+          "status"
+        ).textContent =
+          "Crashed at " +
+          crashPoint.toFixed(2) +
+          "x";
+
+
+        addHistory(
+          stake,
+          crashPoint
+        );
+
+        updateBalance();
+      }
+
+    }, 100);
+
+}
+
+
+/*
+  Add round history
+*/
+
+function addHistory(
+  stake,
+  crashPoint
+) {
+
+  const item =
+    document.createElement("li");
+
+
+  item.textContent =
+    "Stake " +
+    stake +
+    " coins — crashed at " +
+    crashPoint.toFixed(2) +
+    "x";
+
+
+  document
+    .getElementById("history")
+    .prepend(item);
+}
+
+
+/*
+  Update balance
+*/
+
+function updateBalance() {
+
+  document.getElementById(
+    "balance"
+  ).textContent =
+    balance.toFixed(0);
+}
+
+
+updateBalance();
+
+</script>
+
+</body>
+</html>
